@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+        <title>Towers of Annoy</title>
+        <script src="./jquery-3.6.0.min.js"></script>	
+        <script src="./BufferLoader.js"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div id='toa'>
+            <h1>Towers of Annoy</h1>                    
+            <div id="board">
+            </div>
+            <div id="controls">
+                <div class="uirow">
+                    <label class="fieldname">Pegs:</label>
+                    <input type="range" min="3" max="8" value="3" class="slider" id="slider_pegs">
+                    <label class="slidervalue" id="label_pegs"></label>
+                </div>
+                <div class="uirow">
+                    <label class="fieldname">Disks:</label>
+                    <input type="range" min="1" max="12" value="3" class="slider" id="slider_disks">
+                    <label class="slidervalue" id="label_disks"></label>
+                </div>
+                <div class="uirow">
+                    <label class="fieldname">Audio-Volume:</label>
+                    <input type="range" min="1" max="1000" value="50" class="slider" id="slider_volume">
+                    <label class="slidervalue" id="label_volume"></label>
+                </div>             
+                <div class="uirow">
+                    <label class="fieldname">Audio-BPM:</label>
+                    <input type="range" min="30" max="420" value="150" class="slider" id="slider_bpm">
+                    <label class="slidervalue" id="label_bpm"></label>
+                </div>             
+                <div class="uirow">
+                    <label class="fieldname">Playback:</label>
+                    <input type="checkbox" id="checkbox_addreverse" name="addreverse" unchecked>Add reverse</input>
+                    <input type="checkbox" id="checkbox_loop" name="loop" unchecked>Loop</input>
+                    <button id="button_play">Play</button>
+                    <button id="button_pause">Pause</button>
+                    <button id="button_stop">Stop</button>
+                </div>   
+            </div>
+        </div>
+    </body>
+
+<script type="module">
+
+// Read the GET URL variables and return them as an associative array.
+function getUrlVars() {
+    var vars = {}
+
+    if (window.location.href.indexOf('?') != -1) { 
+        var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+        for (var i = 0; i < hashes.length; i++)
+        {
+            var hash = hashes[i].split('=');
+            vars[hash[0]] = decodeURI(hash[1]);
+        }
+    }
+
+    return vars;
+}
+
+var updatingUI;
+
+function updateUI(e) {
+    // don't recurse here if we internally update UI controls.
+    if (updatingUI) { return };
+    updatingUI = true;
+
+    console.log('updateUI()');
+
+    var v;
+    
+    pegs = $('#slider_pegs').val();
+    $('#label_pegs').text(pegs);
+
+    disks = $('#slider_disks').val();
+    $('#label_disks').text(disks);
+
+    v = $('#slider_volume').val()/1000;
+    $('#label_volume').text(Math.floor(v*100) + "%");
+    if (gain_node) {
+        gain_node.gain.value = Math.pow(v, 2);
+    }
+
+    bpm = $('#slider_bpm').val();
+    $('#label_bpm').text(bpm);
+    
+    loop = ($('#checkbox_loop').prop('checked'));
+    addreverse = ($('#checkbox_addreverse').prop('checked'));
+
+    // Stop playback if anything relevant has changed.
+    if (e && (false
+        || (e.target.id=='slider_pegs') 
+        || (e.target.id=='slider_disks') 
+    )) {
+        stop();
+    } 
+
+    // Reinitialize board if anything relevant has changed.
+    if (e && (false
+        || (e.target.id=='slider_pegs') 
+        || (e.target.id=='slider_disks') 
+    )) {
+        init_board();
+    } 
+
+    updatingUI = false;
+}
+
+var pegs;
+var disks;
+
+var playing = true;
+var bpm = 160;
+var loop = false;
+var addreverse = false;
+
+var analyser_node;
+var compressor_node;
+var gain_node;
+
+var fft_array;
+var audio_context;
+var instrument_buffers;
+
+var moves = [];
+var current_move = 0;
+var playing = false;
+var reverse = false;
+var play_move_timer;
+
+// Calculate the moves for a given game of the Towers of Hanoi. Moves 
+// are pushed onto the moves-array in format [source, target].
+function Hanoi(pegs, disks) {
+    console.log('Hanoi(' + pegs + ',' + disks + ')');
+
+    var board = [];
+
+    // Represent the board as a string for logging/debugging. 
+    function boardtostr() {
+
+        var boardstr = '';
+
+        for(var peg = 0 ; peg<pegs ; peg++) {
+            boardstr += '#' + peg + ':['; 
+            boardstr += board[peg].join(', ') + '] ';            
+        }
+        
+        return boardstr;
+    }
+
+    // Process a move from source to target. This updates the internal board representation
+    // for logging and debugging. Also push the move to the global moves-array.
+    function move(source, target) {    
+        var disk = board[source].pop();
+        board[target].push(disk);
+    
+        moves.push([source, target]);
+        // console.log('#' + moves.length + ': From #' + source + ' to #' + target + '  -  ' + boardtostr());
+    }   
+
+    // Main bit: Implements the Frame-Stewart-algorithm.
+    function solve(level, disks, source, dest, intermediates) {
+
+        // console.log(level + 'solve(' + disks + ', ' + source + ', ' + dest + ', [' + intermediates.join(',') + '])');
+
+        if (disks == 1) {
+            move(source, dest);
+        } else {
+            var p;
+
+            // Copy intermediates for recursion:
+            intermediates = intermediates.slice();
+
+            // Pick a number of disks to move.
+            if (intermediates.length >= 2) {
+                p = Math.floor(disks/2);
+            } else {
+                p = disks - 1;
+            }
+
+            // Move top p disks from source to one intermediate
+            var intermediate = intermediates.pop();
+            intermediates.push(dest);
+            solve(level + '   ', p, source, intermediate, intermediates);
+
+            // Move the rest of the disks from source to dest
+            intermediates.pop();
+            solve(level + '   ', disks - p, source, dest, intermediates);
+
+            // Move p disks from chosen intermediate to the final peg
+            intermediates.push(source);
+            solve(level + '   ', p, intermediate, dest, intermediates);
+        }
+    }
+
+    // Reset moves array.
+    moves = []
+    current_move = 0;
+    reverse = false;
+
+    // Build initial board representation: Array of pegs each with an array 
+    // of disk-numbers on them.
+    for(var peg = 0 ; peg<pegs ; peg++) {
+        board.push([]);
+    }
+
+    // Put all the disks on the first peg.
+    for(var disksize = disks ; disksize>0 ; disksize--) {
+        board[0].push(disksize);
+    }
+
+    // Create an array of all the available intermediate pegs.
+    var available_intermediates = [];
+    for(var peg = 1 ; peg<pegs-1 ; peg++) {
+        available_intermediates.push(peg);
+    }
+
+    console.log('Start: ' + boardtostr());
+
+    solve('', disks, /* source */ 0, /* target */ pegs-1, available_intermediates);
+    
+    console.log('Solved in ' + moves.length + ' moves.');
+}
+
+function play_move() {
+    // console.log('play_move(' + current_move + ')');
+
+    // Start playback of selected instrument.
+    var source = audio_context.createBufferSource();
+    source.buffer = instrument_buffers[moves[current_move][1] % instrument_buffers.length];
+    source.connect(gain_node);
+    source.start();
+
+    // Figure out next move to play. This is complicated by the loop- and addreverse-options.
+    if (!reverse) {
+        // Playing forward.
+        current_move = current_move + 1;
+        if (current_move == moves.length) {
+            // Reached the end. Do we want to play in reverse next?
+            if (addreverse) {
+                // Yes. Set reverse flag and adjust current_move.
+                reverse = true;
+                current_move = moves.length-2;
+            } else {
+                // Don't reverse. Loop?
+                if (loop) {
+                    // Yes. Reset to first move.
+                    current_move = 0;
+                } else {
+                    // No. Stop.
+                    stop();
+                } 
+            }
+        }
+    } else {
+        // Playing in reverse.
+        current_move = (current_move-1);
+        if (current_move == -1) {
+            // Back at the start. Are we looping?
+            if (loop) {
+                // Yes. Switch back to forward and adjust current_move
+                reverse = false;
+                current_move = 1;
+            } else {
+                // Not looping. Stop.
+                stop();
+            }
+        }
+    } 
+    
+    // Still playing? Schedule next move.
+    if (playing) {
+        play_move_timer = setTimeout(play_move, 60/bpm*1000);
+    }
+}
+
+function play() {
+    console.log('play()');
+
+    playing = true;
+    if (!play_move_timer) {
+        play_move();
+    }
+}
+
+function pause() {
+    console.log('pause()');
+    
+    if (playing) {
+        if (play_move_timer) {
+            clearTimeout(play_move_timer);
+            play_move_timer = null;
+        }
+        playing = false;
+    } else {
+        play();
+    }
+}
+
+function stop() {
+    console.log('stop()');
+
+    if (playing) {
+        if (play_move_timer) {
+            clearTimeout(play_move_timer);
+            play_move_timer = null;
+        }
+        playing = false;
+    }
+
+    current_move = 0;
+    reverse = false;
+}
+
+function init_board() {
+    console.log('init_board()');
+    Hanoi(pegs, disks);
+    // TODO: Update Screen.
+}
+
+$(document).ready(function() {
+
+    // window.AudioContext = window.AudioContext  || window.webkitAudioContext;
+    audio_context = new AudioContext();
+    
+    analyser_node = audio_context.createAnalyser();
+    analyser_node.fftSize = 128;
+    fft_array = new Uint8Array(analyser_node.frequencyBinCount);
+
+    gain_node = audio_context.createGain();
+    // gain_node.gain.value = Math.pow(volumeSlider.value/1000, 2);
+    
+    compressor_node = audio_context.createDynamicsCompressor();
+
+    gain_node.connect(compressor_node);
+    compressor_node.connect(analyser_node);
+    analyser_node.connect(audio_context.destination);
+
+    new BufferLoader(
+        audio_context,
+        [
+            'samples/kick-808.wav',
+            'samples/clap-808.wav',
+            'samples/hihat-808.wav',
+            'samples/snare-808.wav',
+            'samples/openhat-808.wav',
+            'samples/kick-plain.wav',
+            'samples/perc-808.wav',
+            'samples/tom-808.wav'
+        ],
+        function(data) {
+            console.log('Sounds loaded.');
+
+            instrument_buffers = data;
+
+            updateUI();
+            init_board();            
+        }
+    ).load();
+
+    $('#slider_pegs').on("input change", updateUI);
+    $('#slider_disks').on("input change", updateUI);
+    $('#slider_volume').on("input change", updateUI);
+    $('#slider_bpm').on("input change", updateUI);
+    
+    $('#checkbox_loop').on("change", updateUI);
+    $('#checkbox_addreverse').on("change", updateUI);
+
+    $( "#button_play" ).click(play);
+    $( "#button_pause" ).click(pause);
+    $( "#button_stop" ).click(stop);
+
+    var urlvars = getUrlVars();
+
+    updateUI();
+})
+
+</script>
+
+</html>
+
