@@ -25,7 +25,7 @@ div.uirow {
 }
 
 .uirow button {
-    width: 8em;
+    width: 10em;
     margin-left: 1em;
     margin-right: 1em;
 }
@@ -91,4 +91,8 @@ div.uirow {
 .instrument_select {
     display: block;
     margin: 0 auto;
+}
+
+#preview_buttons button {
+    margin-bottom: 1em;
 }

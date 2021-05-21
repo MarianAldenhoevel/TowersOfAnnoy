@@ -12,8 +12,8 @@
         <div id='toa'>
             <h1>Towers of Annoy</h1>
             <p>Play <em>n</em>-peg Towers of Hanoi with <em>k</em> disks.</p>
-            <p>This implements the Frame-Stewart-Algorithm to create a solution and plays it back to the user. Whenever a disk is put 
-                optionally trigger a musical sound.</p>                    
+            <p>This implements the Frame-Stewart-Algorithm to create a solution and plays it back to the user. Whenever a disk is 
+                placed on a target peg optionally trigger a musical sound.</p>                    
             <div id="board">                
             </div>
             <div id="board_base">                
@@ -47,6 +47,12 @@
                     <button id="button_play">Play</button>
                     <button id="button_reset">Reset</button>
                     <label class="slidervalue" id="label_moves"></label>
+                </div>
+                <div class="uirow">
+                    <label class="fieldname">Instrument preview:</label>
+                </div>
+                <div class="uirow">
+                    <div id="preview_buttons"></div>                    
                 </div>               
             </div>
         </div>
@@ -82,7 +88,7 @@ function update_ui(e) {
     if (updatingUI) { return };
     updatingUI = true;
 
-    console.log('update_ui()');
+    // console.log('update_ui()');
 
     var v;
     
@@ -261,8 +267,7 @@ function get_disk_color(disk)
 
 function create_pegs() {
     // Save the selected instruments for all current pegs.
-    console.log(saved_instruments);
-
+    
     var oldpegs = $('.instrument_select').length;
 
     for (var peg = 0; peg<oldpegs ; peg++) {
@@ -275,8 +280,6 @@ function create_pegs() {
             }
         }
     }
-
-    console.log(saved_instruments);
 
     $('#board').empty();
     $('#board_base').empty();
@@ -295,13 +298,14 @@ function create_pegs() {
         if (peg < saved_instruments.length) {
             $('#instrument' + peg).val(saved_instruments[peg]);
         }
+
+        $('#instrument' + peg).on("change", play_select_instrument_preview);
     }
 }    
 
 function create_disks() {
     // Create all required disks as DIV on peg#
     for(var disk = 1 ; disk<=disks ; disk++) {
-        console.log('create disk ' + disk);
         $('#peg0').append('<div class="disk" id="disk' + disk + '"><div class="disk_body"></div></div>');
         $('#disk' + disk + ' .disk_body').width(disk + 'em').css('background',get_disk_color(disk)); 
     }
@@ -322,9 +326,27 @@ function remove_all_glow() {
     }
 }
     
-function play_move() {
-    console.log('play_move(' + current_move + ')');
+function play_instrument(instrument) {
+    var source = audio_context.createBufferSource();
+        source.buffer = instrument_buffers[instrument];
+        source.connect(gain_node);
+        source.start();
+}
 
+function play_select_instrument_preview(e) {
+    if (e) {
+        play_instrument($('#' + e.target.id).val())
+    }
+}
+
+function play_button_instrument_preview(e) {
+    if (e) {
+        play_instrument(e.target.id.substr('button_instrument_'.length))
+    }
+}
+
+function play_move() {
+    
     var source = moves[current_move][0];
     var target = moves[current_move][1];
     
@@ -337,7 +359,7 @@ function play_move() {
         target = tmp;
     }
 
-    console.log('play_move(' + current_move + ') from #' + source + ' to #' + target);
+    // console.log('play_move(' + current_move + ') from #' + source + ' to #' + target);
 
     // If we looped in the last step we now need to intantly put back all
     // disks on peg 0.
@@ -360,10 +382,7 @@ function play_move() {
         $('#instrument' + target).addClass('glower_active');
         glow_deactivation_timer = setTimeout(remove_all_glow, 1000);
 
-        var source = audio_context.createBufferSource();
-        source.buffer = instrument_buffers[selected_instrument];
-        source.connect(gain_node);
-        source.start();
+        play_instrument(selected_instrument);
     }
 
     // Figure out next move to play. This is complicated by the loop- and addreverse-options.
@@ -483,6 +502,11 @@ $(document).ready(function() {
     gain_node.connect(compressor_node);
     compressor_node.connect(analyser_node);
     analyser_node.connect(audio_context.destination);
+
+    for(var sample_index = 0; sample_index < available_samples.length ; sample_index++) {
+        $('#preview_buttons').append('<button class="button_instrument" id="button_instrument_' + sample_index + '">' + available_samples[sample_index].substr('samples/'.length) + '</button>');            
+    }
+    $('.button_instrument').click(play_button_instrument_preview);
 
     new BufferLoader(
         audio_context,
