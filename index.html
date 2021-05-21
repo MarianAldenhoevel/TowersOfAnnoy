@@ -11,7 +11,9 @@
     <body>
         <div id='toa'>
             <h1>Towers of Annoy</h1>                    
-            <div id="board">
+            <div id="board">                
+            </div>
+            <div id="board_base">                
             </div>
             <div id="controls">
                 <div class="uirow">
@@ -38,9 +40,9 @@
                     <label class="fieldname">Playback:</label>
                     <input type="checkbox" id="checkbox_addreverse" name="addreverse" unchecked>Add reverse</input>
                     <input type="checkbox" id="checkbox_loop" name="loop" unchecked>Loop</input>
+                    <button id="button_step">Step</button>
                     <button id="button_play">Play</button>
-                    <button id="button_pause">Pause</button>
-                    <button id="button_stop">Stop</button>
+                    <button id="button_reset">Reset</button>
                 </div>   
             </div>
         </div>
@@ -98,7 +100,7 @@ function updateUI(e) {
         || (e.target.id=='slider_pegs') 
         || (e.target.id=='slider_disks') 
     )) {
-        stop();
+        reset();
     } 
 
     // Reinitialize board if anything relevant has changed.
@@ -119,6 +121,7 @@ var playing = true;
 var bpm = 160;
 var loop = false;
 var addreverse = false;
+var reset_before_next_move = false;
 
 var analyser_node;
 var compressor_node;
@@ -228,12 +231,56 @@ function Hanoi(pegs, disks) {
     console.log('Solved in ' + moves.length + ' moves.');
 }
 
-function play_move() {
-    // console.log('play_move(' + current_move + ')');
+function get_disk_color(disk)
+{
+    // Map the disk 1..n to a HSL hue between 240 and 0.
+    var minHue = 240, maxHue=0;
+    var curPercent = (disk-1) / (disks-1);
+    var colString = "hsl(" + ((curPercent * (maxHue-minHue) ) + minHue) + ",100%,50%)";
+    return colString;
+}
 
-    // Start playback of selected instrument.
+function create_disks() {
+    // Create all required disks as DIV on peg#
+    for(var disk = 1 ; disk<=disks ; disk++) {
+        console.log('create disk ' + disk);
+        $('#peg0').append('<div class="disk" id="disk' + disk + '"><div class="disk_inner"></div></div>');
+        $('#disk' + disk + ' .disk_inner').width(disk + 'em');
+        $('#disk' + disk + ' .disk_inner').css('background',get_disk_color(disk)); 
+    }
+}
+
+function play_move() {
+    console.log('play_move(' + current_move + ')');
+
+    var source = moves[current_move][0];
+    var target = moves[current_move][1];
+    
+    if (reverse) {
+        // Swap source and target.
+        var tmp = source;
+        source = target;
+        target = tmp;
+    }
+
+    console.log('play_move(' + current_move + ') from #' + source + ' to #' + target);
+
+    // If we looped in the last step we now need to intantly put back all
+    // disks on peg 0.
+    if (reset_before_next_move) {
+        $('.disk').remove();
+        create_disks();
+        reset_before_next_move = false;
+    }
+
+    // Get the top disk from the source peg.
+    var disk = $('#peg' + source + ' div.disk').first();
+    // And drop it onto the target peg.
+    $('#peg' + target).prepend(disk);
+
+    // Start playback of selected instrument
     var source = audio_context.createBufferSource();
-    source.buffer = instrument_buffers[moves[current_move][1] % instrument_buffers.length];
+    source.buffer = instrument_buffers[target % instrument_buffers.length];
     source.connect(gain_node);
     source.start();
 
@@ -246,15 +293,16 @@ function play_move() {
             if (addreverse) {
                 // Yes. Set reverse flag and adjust current_move.
                 reverse = true;
-                current_move = moves.length-2;
+                current_move = moves.length-1;
             } else {
                 // Don't reverse. Loop?
                 if (loop) {
                     // Yes. Reset to first move.
                     current_move = 0;
+                    reset_before_next_move = true;
                 } else {
                     // No. Stop.
-                    stop();
+                    playing = false;                
                 } 
             }
         }
@@ -264,12 +312,12 @@ function play_move() {
         if (current_move == -1) {
             // Back at the start. Are we looping?
             if (loop) {
-                // Yes. Switch back to forward and adjust current_move
+                // Yes. Switch back to forward and adjust current_move.
                 reverse = false;
-                current_move = 1;
+                current_move = 0;
             } else {
                 // Not looping. Stop.
-                stop();
+                playing = false;
             }
         }
     } 
@@ -280,48 +328,66 @@ function play_move() {
     }
 }
 
+function step() {
+    console.log('step()');
+
+    if (play_move_timer) {
+        clearTimeout(play_move_timer);
+        play_move_timer = null;
+    }
+    playing = false;
+
+    play_move();
+}
+
 function play() {
     console.log('play()');
 
-    playing = true;
-    if (!play_move_timer) {
-        play_move();
-    }
-}
-
-function pause() {
-    console.log('pause()');
-    
     if (playing) {
+        // Pause
         if (play_move_timer) {
             clearTimeout(play_move_timer);
             play_move_timer = null;
         }
         playing = false;
     } else {
-        play();
+        // Play
+        playing = true;
+        if (!play_move_timer) {
+            play_move();
+        }
     }
 }
 
-function stop() {
-    console.log('stop()');
+function reset() {
+    console.log('reset()');
 
-    if (playing) {
-        if (play_move_timer) {
-            clearTimeout(play_move_timer);
-            play_move_timer = null;
-        }
-        playing = false;
+    if (play_move_timer) {
+        clearTimeout(play_move_timer);
+        play_move_timer = null;
     }
-
-    current_move = 0;
-    reverse = false;
+    playing = false;
+    
+    init_board();
 }
 
 function init_board() {
     console.log('init_board()');
+    
     Hanoi(pegs, disks);
-    // TODO: Update Screen.
+    
+    // Update Screen to initial conditions
+    
+    // Clear all pegs and disks
+    $('#board').empty();
+    $('#board_base').empty();
+    
+    // Create pegs
+    for (var peg = 0; peg<pegs ; peg++) {
+        $('#board').append('<div class="peg" id="peg' + peg + '"></div>');
+        $('#board_base').append('<div class="peg_base" id="peg' + peg + '">#' + peg + '</div>');
+    }
+    create_disks();
 }
 
 $(document).ready(function() {
@@ -372,9 +438,9 @@ $(document).ready(function() {
     $('#checkbox_loop').on("change", updateUI);
     $('#checkbox_addreverse').on("change", updateUI);
 
+    $( "#button_step" ).click(step);
     $( "#button_play" ).click(play);
-    $( "#button_pause" ).click(pause);
-    $( "#button_stop" ).click(stop);
+    $( "#button_reset" ).click(reset);
 
     var urlvars = getUrlVars();
 

@@ -33,3 +33,51 @@ div.uirow {
     margin-left: 1em;
     margin-right: 1em;
 }
+
+#board {
+    display: flex;
+    flex-direction: row;    
+    min-height: 10em;
+    background-color:rgb(200, 200, 200)
+}
+
+.peg {
+    min-height: 10em;
+
+    flex-basis: 0;
+    flex-grow: 1;
+
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: column;
+}
+
+#board_base {
+    display: flex;
+    flex-direction: row;    
+    height: 2em;
+    border-top: 2px solid black;
+    background-color:rgb(200, 200, 200)
+}
+
+.peg_base {
+    height: 2em;
+    text-align: center;
+
+    flex-basis: 0;
+    flex-grow: 1;
+
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: column;
+}
+
+.disk {
+    height: 1em;
+}
+
+.disk_inner {
+    height: 100%;
+    margin: 0 auto;
+    border: 1px solid black;
+}
