@@ -258,10 +258,19 @@ function Hanoi(pegs, disks) {
 
 function get_disk_color(disk)
 {
-    // Map the disk 1..n to a HSL hue between 240 and 0.
-    var minHue = 240, maxHue=0;
-    var curPercent = (disk-1) / (disks-1);
-    var colString = "hsl(" + ((curPercent * (maxHue-minHue) ) + minHue) + ",100%,50%)";
+    // Map the disk 0..disks-1 to a HSL hue between min_hue and max_hue.
+    var min_hue = 240
+    var max_hue = 0;
+    
+    var hue;
+    if (disks == 1) {
+        hue = min_hue;
+    } else {
+        hue = (disk - 1) / (disks - 1) * (max_hue - min_hue) + min_hue;
+    }
+
+    var colString = "hsl(" + hue + ",100%,50%)";
+    
     return colString;
 }
 
