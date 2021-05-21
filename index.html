@@ -154,6 +154,7 @@ var current_move = 0;
 var playing = false;
 var reverse = false;
 var play_move_timer;
+var glow_deactivation_timer;
 var reset_before_next_move = false;
 
 // Calculate the moves for a given game of the Towers of Hanoi. Moves 
@@ -313,6 +314,14 @@ function update_moves_label() {
     $('#label_moves').text('move ' + (current_move+1) +' of ' + moves.length);
 }
 
+function remove_all_glow() {
+    $('.instrument_select').removeClass('glower_active');
+    if (glow_deactivation_timer) {
+        clearTimeout(glow_deactivation_timer);
+        glow_deactivation_timer = 0;
+    }
+}
+    
 function play_move() {
     console.log('play_move(' + current_move + ')');
 
@@ -343,13 +352,14 @@ function play_move() {
     // And drop it onto the target peg.
     $('#peg' + target).prepend(disk);
 
-    $('.instrument_select').removeClass('glower_active');
-    
+    remove_all_glow();
+
     // Start playback of selected instrument
     var selected_instrument = $('#instrument' + target).val();
     if (selected_instrument != -1) {
         $('#instrument' + target).addClass('glower_active');
-    
+        glow_deactivation_timer = setTimeout(remove_all_glow, 1000);
+
         var source = audio_context.createBufferSource();
         source.buffer = instrument_buffers[selected_instrument];
         source.connect(gain_node);
