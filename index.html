@@ -72,6 +72,10 @@
                 </div>
                 <div class="uirow">
                     <div id="preview_buttons"></div>                    
+                </div>
+                <div class="uirow">
+                    <label class="fieldname">Add custom sample</label>
+                    <input id="file_custom_instrument" type="file" accept="audio/*"/>
                 </div>               
             </div>
         </div>
@@ -173,6 +177,7 @@ const available_samples = [
     'samples/perc-808.wav',
     'samples/tom-808.wav'
 ];
+var instrument_buffers;
 
 var pegs;
 var disks;
@@ -188,7 +193,6 @@ var saved_instruments = [];
 
 var fft_array;
 var audio_context;
-var instrument_buffers;
 
 var moves = [];
 var current_move = 0;
@@ -379,9 +383,9 @@ function remove_all_glow() {
     
 function play_instrument(instrument) {
     var source = audio_context.createBufferSource();
-        source.buffer = instrument_buffers[instrument];
-        source.connect(gain_node);
-        source.start();
+    source.buffer = instrument_buffers[instrument];
+    source.connect(gain_node);
+    source.start();
 }
 
 function play_select_instrument_preview(e) {
@@ -664,6 +668,33 @@ function init_board() {
     abc_render();
 }
 
+function load_custom_instrument(e) {
+    // console.log('load_custom_instrument()');
+
+    var file = e.target.files[0];
+    console.log(file);
+    $('#file_custom_instrument').val('');
+
+    file.arrayBuffer().then(function(arrayBuffer) {
+        audio_context.decodeAudioData(arrayBuffer).then(function(audioBuffer) {
+            var source = audio_context.createBufferSource();
+    
+            available_samples.push('samples/' + file.name);
+            instrument_buffers.push(audioBuffer);
+
+            source.buffer = audioBuffer;
+            source.connect(gain_node);
+            source.start();
+    
+            console.log(instrument_buffers.length);
+            var btnid = 'button_instrument_' + (instrument_buffers.length-1); 
+            $('#preview_buttons').append('<button class="button_instrument custom" id="' + btnid + '">' + file.name + '</button>');            
+            $('#' + btnid).click(play_button_instrument_preview);
+            $('.instrument_select').append('<option value="' + (instrument_buffers.length-1) + '">' + file.name + '</option>');
+        })
+    });
+};
+
 $(document).ready(function() {
 
     // window.AudioContext = window.AudioContext  || window.webkitAudioContext;
@@ -705,19 +736,21 @@ $(document).ready(function() {
         }
     ).load();
 
-    $('#slider_pegs').on("input change", update_ui);
-    $('#slider_disks').on("input change", update_ui);
-    $('#slider_volume').on("input change", update_ui);
-    $('#slider_bpm').on("input change", update_ui);
-    $('#slider_timesignature').on("input change", update_ui);
+    $('#slider_pegs').on('input change', update_ui);
+    $('#slider_disks').on('input change', update_ui);
+    $('#slider_volume').on('input change', update_ui);
+    $('#slider_bpm').on('input change', update_ui);
+    $('#slider_timesignature').on('input change', update_ui);
     
-    $('#checkbox_loop').on("change", update_ui);
-    $('#checkbox_addreverse').on("change", update_ui);
-    $('#checkbox_colornotes').on("change", update_ui);
+    $('#checkbox_loop').on('change', update_ui);
+    $('#checkbox_addreverse').on('change', update_ui);
+    $('#checkbox_colornotes').on('change', update_ui);
 
-    $( "#button_step" ).click(step);
-    $( "#button_play" ).click(play);
-    $( "#button_reset" ).click(reset);
+    $('#button_step').click(step);
+    $('#button_play').click(play);
+    $('#button_reset').click(reset);
+
+    $('#file_custom_instrument').on('change', load_custom_instrument);
 
     var urlvars = getUrlVars();
 
