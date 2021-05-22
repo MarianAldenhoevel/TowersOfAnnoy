@@ -390,7 +390,11 @@ function play_instrument(instrument) {
 
 function play_select_instrument_preview(e) {
     if (e) {
-        play_instrument($('#' + e.target.id).val())
+        play_instrument($('#' + e.target.id).val());
+        
+        // Re-render the notation in case an instrument switched to or from "silent" so
+        // we can show or hide rests.
+        abc_render();
     }
 }
 
@@ -551,6 +555,7 @@ function play_move() {
     var abcnote = abc_note_index % timesignature; 
 
     $('.abcjs-note').removeClass('current_note');
+    $('.abcjs-rest').removeClass('current_note');
     $('.abcjs-mm' + abcmeasure + '.abcjs-n' + abcnote).addClass('current_note');
 
     // Overall notes played. This only resets on a new start.
