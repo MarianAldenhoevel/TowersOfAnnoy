@@ -15,6 +15,10 @@ div.uirow {
     margin: 1em;
 }
 
+.uirow.sectiontitle {
+    font-weight: bold;
+}
+
 .uirow label.fieldname {
     min-width: 10em;
 }
@@ -95,4 +99,15 @@ div.uirow {
 
 #preview_buttons button {
     margin-bottom: 1em;
+}
+
+.current_note {
+    fill: orange;
+    stroke: orange;
+    stroke-width: 1;
+}
+
+#abc {
+    text-align: center;
+    margin-top: 1em;
 }
