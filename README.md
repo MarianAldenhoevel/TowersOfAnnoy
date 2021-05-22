@@ -1,3 +1,3 @@
 # Towers of Annoy
 
-Run me at https://rawcdn.githack.com/MarianAldenhoevel/TowersOfAnnoy/main/index.html
+[Run me](https://rawcdn.githack.com/MarianAldenhoevel/TowersOfAnnoy/214d2bb/index.html)
