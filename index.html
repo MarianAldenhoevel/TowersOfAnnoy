@@ -477,6 +477,9 @@ function update_moves_label() {
 
 function remove_all_glow() {
     $('.instrument_select').removeClass('glower_active');
+    $('.abcjs-note').removeClass('current_note');
+    $('.abcjs-rest').removeClass('current_note');
+    
     if (glow_deactivation_timer) {
         clearTimeout(glow_deactivation_timer);
         glow_deactivation_timer = 0;
