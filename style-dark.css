@@ -1,0 +1,26 @@
+body {
+    background-color: black;
+    color: white;
+}
+
+#board {
+    border-color: black;
+    background-color:rgb(200, 200, 200);
+    color: white;
+}
+
+#board_base {
+    border-color:  black;
+    background-color:rgb(200, 200, 200);
+}
+
+#abc {
+    border-color: black;
+    color: black;
+    background-color:rgb(200, 200, 200);
+}
+
+#analyser_container {
+    border-color: black;
+    background-color:rgb(200, 200, 200);
+}
