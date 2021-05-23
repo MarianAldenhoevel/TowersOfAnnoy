@@ -4,6 +4,6 @@ Imagine the game of "Tower of Hanoi" ([Wikipedia](https://en.wikipedia.org/wiki/
 
 What would the resulting piece sound like?
 
-Find out at the [Towers of Annoy](https://rawcdn.githack.com/MarianAldenhoevel/TowersOfAnnoy/e80cdf3/index.html)!
+Find out at the [Towers of Annoy](https://rawcdn.githack.com/MarianAldenhoevel/TowersOfAnnoy/59e1fc1/index.html)!
 
 This implementation is HTML5/CSS and JavaScript and runs in your browser. A basic webserver that can deliver static content is needed but there is no server-side processing.
