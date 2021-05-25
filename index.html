@@ -202,7 +202,7 @@ function update_url() {
     // console.log('update_url()');
     
     // Create a linkeable URL to capture this setup.
-    var url = window.location.origin;
+    var url = window.location.protocol + '//' + window.location.host + window.location.pathname;
 
     url += '?p=' + pegs;
     url += '&d=' + disks;
