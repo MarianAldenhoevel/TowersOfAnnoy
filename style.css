@@ -30,8 +30,41 @@ div.uirow {
 
 .uirow button {
     width: 10em;
-    margin-left: 1em;
+    height: 2em;
     margin-right: 1em;
+}
+
+button.key {
+    float: left;
+    position: relative;
+    margin: 0 0 1em 0;
+    padding: 0 0 1em 0;
+    writing-mode: sideways-lr;
+    text-align: left;
+    font-size: x-small;
+}
+
+button.key.white {
+    height: 100px;
+    width: 26px;
+    z-index: 1;
+    border-top: 1px solid #aaaaaa;
+    border-bottom: 1px solid #aaaaaa;
+    border-left: 1px solid #aaaaaa;
+    background-color: #dddddd;
+}
+
+button.key.black {
+    height: 60px;
+    width: 13px;
+    z-index: 2;
+    border: 1px solid black;
+    background-color: #444444;
+    color: #bbbbbb;
+}
+
+.a, .b, .d, .e, .g, .black {
+    margin: 0 0 1em -7px !important;
 }
 
 #board {
@@ -94,8 +127,9 @@ div.uirow {
     border: 1px solid black;
 }
 
-.instrument_select {
+.instrument_select, .note_select {
     display: block;
+    width: 10em;
     margin: 0 auto;
 }
 
