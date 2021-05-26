@@ -7,3 +7,5 @@ What would the resulting piece sound like?
 Find out at the [Towers of Annoy](https://rawcdn.githack.com/MarianAldenhoevel/TowersOfAnnoy/1603849/index.html)!
 
 This implementation is HTML5/CSS and JavaScript and runs in your browser. A basic webserver that can deliver static content is needed but there is no server-side processing.
+
+More information can be found at https://marian-aldenhoevel.de/towers-of-annoy/
