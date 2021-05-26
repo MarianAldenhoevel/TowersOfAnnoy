@@ -10,7 +10,7 @@
         <script src="./recorder.js"></script>
         <script src="./moment.js"></script>
         <link rel="stylesheet" href="style.css">
-        <link rel="stylesheet" href="style-dark.css">
+        <link rel="stylesheet" href="style-dark.css" id="style_darkmode" disabled="true">
     </head>
     <body>
         <div id='toa'>
@@ -19,23 +19,26 @@
             <p>TL;DR:</p>
             <ol>
                 <li>Click play</li>
-                <li>Change settings and click play</li>
+                <li>Change number of pegs or disks and other settings and click play</li>
+                <li>Select instruments or drag them from the preview area to pegs</li>
                 <li>Copy the notation and try playing it on a real instrument</li>
                 <li>Copy a preset from the URL and share it!</li>
             </ol>
-            <div class="uirow">
-                <button class="button_step" accesskey="s">Step</button>
-                <button class="button_play" accesskey="p">Play</button>
-                <button class="button_reset">Reset</button>
-                <label class="slidervalue label_moves" id="label_moves1"></label>
-                <label class="slidervalue" id="label_moves">&nbsp;&nbsp;<em>(For more controls see below)</em></label>
-            </div>
-            <div id="board">                
-            </div>
-            <div id="board_base">                
-            </div>
-            <div id="analyser_container">
-                <canvas id="analyser"></canvas>
+            <div id="sticky">
+                <div class="uirow board">
+                    <button class="button_step" accesskey="s">Step</button>
+                    <button class="button_play" accesskey="p">Play</button>
+                    <button class="button_reset">Reset</button>
+                    <label class="slidervalue label_moves" id="label_moves1"></label>
+                    <label class="slidervalue" id="label_moves">&nbsp;&nbsp;<em>(For more controls see below)</em></label>
+                </div>    
+                <div id="board">                
+                </div>
+                <div id="board_base">                
+                </div>
+                <div id="analyser_container">
+                    <canvas id="analyser"></canvas>
+                </div>
             </div>
             <div id="abc"></div>
             <div id="controls">
@@ -63,6 +66,7 @@
                 <div class="uirow">
                     <label class="fieldname">General appearance</label>
                     <input type="checkbox" id="checkbox_colornotes" name="colornotes" unchecked>Color note by disk</input>
+                    <input type="checkbox" id="checkbox_darkmode" name="darkmode" unchecked>Dark mode</input>
                 </div>
                 <div class="uirow">
                     <label class="fieldname">abc notation string&nbsp;<a href="http://abcnotation.com/wiki/abc:standard:v2.1" target="_blank">[?]</a></label>
@@ -97,7 +101,7 @@
                 <div class="uirow" id="div_record">
                     <button id="button_record" accesskey="s">Start Recording</button>                    
                 </div>
-                <div class="uirow sectiontitle" id="sample_preview">
+                <div class="uirow sectiontitle" id="sample_library">
                     <label class="fieldname">Sample library:</label>
                 </div>
                 <div class="uirow sectiontitle">
@@ -106,7 +110,7 @@
                 <div class="uirow">
                     <input id="file_custom_sample" type="file" accept="audio/*"/>
                     <label>abc note&nbsp;<a href="http://abcnotation.com/wiki/abc:standard:v2.1#pitch" target="_blank">[?]</a>&nbsp;<input id="text_custom_sample_note" type="text" maxlength="4" style="width: 3em;"/>
-                    <button id="button_custom_sample_preview" disabled>Preview</button>
+                    <button id="button_custom_sample_library" disabled>Preview</button>
                     <button id="button_custom_sample_add" disabled>Add</button>
                 </div>               
             </div>
@@ -173,6 +177,8 @@ var reset_before_next_move = false;
 var custom_sample_file = null;
 var custom_sample_buffer = null;
 
+var sample_being_dragged = null;
+
 const MAXABC = 1024;
 
 // Read the GET URL variables and return them as an associative array.
@@ -204,25 +210,26 @@ function update_url() {
     // Create a linkeable URL to capture this setup.
     var url = window.location.protocol + '//' + window.location.host + window.location.pathname;
 
-    url += '?p=' + pegs;
-    url += '&d=' + disks;
-    url += '&b=' + bpm;
-    url += '&v=' + $('#slider_volume').val();
-    url += '&l=' + (loop ? 1 : 0);
-    url += '&a=' + (addreverse ? 1 : 0);
-    url += '&t=' + timesignature;
-    url += '&c=' + ($('#checkbox_colornotes').prop('checked') ? 1 : 0);
+    url += '?pe=' + pegs;
+    url += '&di=' + disks;
+    url += '&bpm=' + bpm;
+    url += '&vo=' + $('#slider_volume').val();
+    url += '&lo=' + (loop ? 1 : 0);
+    url += '&ar=' + (addreverse ? 1 : 0);
+    url += '&ts=' + timesignature;
+    url += '&cn=' + ($('#checkbox_colornotes').prop('checked') ? 1 : 0);
+    url += '&dm=' + ($('#checkbox_darkmode').prop('checked') ? 1 : 0);
 
     for(var peg = 0; peg < pegs; peg++) {
-        url += '&i' + peg + '=' + selected_samples[peg][0]; 
-        url += '&s' + peg + '=' + selected_samples[peg][1];
+        url += '&in' + peg + '=' + selected_samples[peg][0]; 
+        url += '&sa' + peg + '=' + selected_samples[peg][1];
     }
 
     history.replaceState(null, '', url);
 }
 
 function parse_url() {
-    console.log('parse_url()');
+    // console.log('parse_url()');
     
     var urlvars = getUrlVars();
 
@@ -241,20 +248,21 @@ function parse_url() {
         }
     }
 
-    set_slider('#slider_pegs',   'p');
-    set_slider('#slider_disks',  'd');
-    set_slider('#slider_bpm',    'b');
-    set_slider('#slider_volume', 'v');
-    set_checkbox('#checkbox_loop', 'l');
-    set_checkbox('#checkbox_addreverse', 'l');    
-    set_slider('#slider_timesignature', 't');
-    set_checkbox('#checkbox_colornotes', 'c');
-    
+    set_slider('#slider_pegs',           'pe');
+    set_slider('#slider_disks',          'di');
+    set_slider('#slider_bpm',            'bpm');
+    set_slider('#slider_volume',         'vo');
+    set_checkbox('#checkbox_loop',       'lo');
+    set_checkbox('#checkbox_addreverse', 'ar');    
+    set_slider('#slider_timesignature',  'ts');
+    set_checkbox('#checkbox_colornotes', 'cn');
+    set_checkbox('#checkbox_darkmode',   'dm');
+
     // Overwrite selected instrument for all pegs we possibly support as indicated
     // by the max property on the pegs slider.
     for (var peg = 0; peg < $('#slider_pegs').prop('max'); peg++) {
-        var instrument = urlvars['i' + peg];
-        var sample_id = urlvars['s' + peg];
+        var instrument = urlvars['in' + peg];
+        var sample_id = urlvars['sa' + peg];
 
         if (instrument && sample_catalog.has(instrument)) {
             var sample_id_valid = (sample_id == 'silence');
@@ -310,6 +318,8 @@ function update_ui(e) {
     loop = ($('#checkbox_loop').prop('checked'));
     addreverse = ($('#checkbox_addreverse').prop('checked'));
     
+    $('#style_darkmode').prop('disabled', !$('#checkbox_darkmode').prop('checked'));
+    
     timesignature = parseInt($('#slider_timesignature').val());
     $('#label_timesignature').text(timesignature + '/4');
     
@@ -333,7 +343,7 @@ function update_ui(e) {
         abc_render();
     } 
     
-    $('#button_custom_sample_preview').prop('disabled', !(custom_sample_buffer));
+    $('#button_custom_sample_library').prop('disabled', !(custom_sample_buffer));
     $('#button_custom_sample_add').prop('disabled', !(custom_sample_buffer));
 
     if (recording) {
@@ -344,7 +354,7 @@ function update_ui(e) {
 
     // Disable note selects if "instrument" silence is selected.
     for(var peg = 0; peg < pegs; peg++) {
-        $('#note' + peg).prop('disabled', ($('#instrument' + peg).val() == 'silence'));
+        $('#sample' + peg).prop('disabled', ($('#instrument' + peg).val() == 'silence'));
     }
 
     updating_ui = false;
@@ -369,20 +379,20 @@ function load_sample(instrument, note_index, callback) {
             request.response,
             function(buffer) {
                 if (!buffer) {
-                    console.log('ERROR: Decoding file data: ' + url);
+                    console.error('Error decoding file data: ' + url);
                     return;
                 }
                 sample_catalog.get(instrument)[note_index].push(buffer);
                 callback();
             },
             function(error) {
-                console.log('ERROR: decodeAudioData()');
+                console.error('Error in decodeAudioData()');
             }
         );
     }
 
     request.onerror = function() {
-        console.log('ERROR: BufferLoader-XHR');
+        console.error('Error in BufferLoader-XHR');
     }
 
     request.send();
@@ -414,7 +424,7 @@ BufferLoader.prototype.load_all = function() {
     // Preload all instruments that we are currently using.
     for (var peg = 0 ; peg<pegs ; peg++) {
         var instrument = $('#instrument' + peg).val();
-        var sample_id = $('#note' + peg).val();
+        var sample_id = $('#sample' + peg).val();
 
         if ((instrument != 'silence') && (sample_id != 'silence')) {
             var samples = sample_catalog.get(instrument);
@@ -562,9 +572,9 @@ function create_pegs() {
 
         // Peg-DIV for sample-selection. Holds a <select> each for instrument and note.
         $('#board_base').append(
-            '<div class="peg_base" id="peg_base' + peg + '">' +
+            '<div class="peg_base dropzone" id="peg_base' + peg + '">' +
                 '<select class="instrument_select glower" id="instrument' + peg + '"></select>' + 
-                '<select class="note_select glower" id="note' + peg + '"></select>' + 
+                '<select class="sample_select glower" id="sample' + peg + '"></select>' + 
             '</div>'
         );
         
@@ -577,9 +587,13 @@ function create_pegs() {
         
         // Re-select previously selected sample for this peg.
         select_sample(peg);
+
+        $('.dropzone').on('dragover', sample_dragover);
+        $('.dropzone').on('dragleave', sample_dragleave);
+        $('.dropzone').on('drop', sample_drop);
         
         $('#instrument' + peg).on("change", instrument_changed);
-        $('#note' + peg).on("change", note_changed);
+        $('#sample' + peg).on("change", note_changed);
     }
 }    
 
@@ -600,7 +614,8 @@ function update_moves_label() {
 
 function remove_all_glow() {
     $('.instrument_select').removeClass('glower_active');
-    $('.note_select').removeClass('glower_active');
+    $('.sample_select').removeClass('glower_active');
+    $('.button_sample_library').removeClass('glower_active');
     $('.abcjs-note').removeClass('current_note');
     $('.abcjs-rest').removeClass('current_note');
     
@@ -611,9 +626,9 @@ function remove_all_glow() {
 }
     
 function play_sample(instrument, sample_id) {
-    console.log('play_sample(\'' + instrument + '\', \'' + sample_id + '\')');
+    // console.log('play_sample(\'' + instrument + '\', \'' + sample_id + '\')');
 
-    if ((instrument != 'silence') && (sample_id != 'silence')) {
+    if (instrument && (instrument != 'silence') && (sample_id != 'silence')) {
         var samples = sample_catalog.get(instrument);
         for (var sample_index = 0; sample_index < samples.length; sample_index++) {
             if (samples[sample_index][SAMPLE_ID] == sample_id) {
@@ -621,6 +636,7 @@ function play_sample(instrument, sample_id) {
                 if (!samples[sample_index][SAMPLE_BUFFER]) {
                     // Sample not yet loaded. Do that now asynchronously and play as
                     // soon as we have it.
+                    // console.log('Async load sample, play deferred.');
                     load_sample(instrument, sample_index, function() { 
                         play_sample(instrument, sample_id)
                     })
@@ -643,16 +659,23 @@ function update_note_options(peg) {
 
     // console.log('update_note_options(' + peg + ')');
 
-    $('#note' + peg).empty();
-    $('#note' + peg).append('<option class="silence" selected value="silence"></option>');
+    $('#sample' + peg).empty();
+    $('#sample' + peg).append('<option class="silence" selected value="silence"></option>');
     
-    // Add all notes for the new instrument.
+    // Add all notes for the currently selected instrument.
     var notes = sample_catalog.get(selected_samples[peg][0]);
     if (notes) {
         for (var note_index = 0 ; note_index < notes.length; note_index++)  {
-            $('#note' + peg).append('<option value="' + notes[note_index][SAMPLE_ID] + '">' + notes[note_index][SAMPLE_ID] + '</option>');
+            $('#sample' + peg).append(
+                '<option value="' + notes[note_index][SAMPLE_ID] + '" ' + 
+                ((notes[note_index][SAMPLE_ID] == selected_samples[peg][1]) ? ' selected' : '') + 
+                '>' + notes[note_index][SAMPLE_ID] + 
+                '</option>'
+            );
         }
     }        
+
+    $('#sample' + peg).val();
 }
 
 function select_sample(peg) {
@@ -666,7 +689,7 @@ function select_sample(peg) {
 
     // Select instrument and note.
     $('#instrument' + peg).val(selected_samples[peg][0]);
-    $('#note' + peg).val(selected_samples[peg][1]);
+    $('#sample' + peg).val(selected_samples[peg][1]);
 }
 
 function instrument_changed(e) {
@@ -685,8 +708,8 @@ function instrument_changed(e) {
     // fail if the new instrument does not support the note, update_note_options()
     // will have defaulted to silence. So read back the value in case we need
     // to mute.
-    $('#note' + peg).val(selected_samples[peg][1]);
-    selected_samples[peg][1] = $('#note' + peg).val();
+    $('#sample' + peg).val(selected_samples[peg][1]);
+    selected_samples[peg][1] = $('#sample' + peg).val();
 
     sample_changed(peg);
 
@@ -702,7 +725,7 @@ function note_changed(e) {
     var peg = e.target.id.substring('note'.length);
 
     // Update the selected sample note to the new value.
-    selected_samples[peg][1] = $('#note' + peg).val();
+    selected_samples[peg][1] = $('#sample' + peg).val();
 
     sample_changed(peg)
 
@@ -711,7 +734,7 @@ function note_changed(e) {
 
 function sample_changed(peg) {
     var instrument = $('#instrument' + peg).val();
-    var sample_id = $('#note' + peg).val();
+    var sample_id = $('#sample' + peg).val();
 
     play_sample(instrument, sample_id);
     
@@ -720,15 +743,23 @@ function sample_changed(peg) {
     abc_render();
 }
 
-function play_button_sample_preview(e) {
-    var t = e.target;
-    while (t && !t.id) {
-        t = t.parentNode; 
-    }
-    console.log('play_button_sample_preview("' + t.id + '")');
+// Returns el or the first parent up that has an ID attribute 
+function parent_with_id(el) {
+    var result = el;
     
-    var instrument = $("#" + t.id).data('instrument');
-    var sample_id = $("#" + t.id).data('sample-id');
+    while (result && !result.id) {
+        result = result.parentNode; 
+    }
+
+    return result;
+}
+
+function play_button_sample_library(e) {
+    var t = parent_with_id(e.target); 
+    // console.log('play_button_sample_library("' + t.id + '")');
+    
+    var instrument = $(t).data('instrument');
+    var sample_id = $(t).data('sample-id');
 
     play_sample(instrument, sample_id);
 }
@@ -763,7 +794,7 @@ function abc_render() {
         var instrument = selected_samples[peg][0];
         var sampleid = selected_samples[peg][1];
         var note = 'x';
-        if ((instrument != 'silence') && (sampleid != 'silence'))  {
+        if (instrument && (instrument != 'silence') && (sampleid != 'silence'))  {
             // find the sample by id
             var samples = sample_catalog.get(instrument);
             for(var sample_index = 0; sample_index < samples.length; sample_index++) {
@@ -902,8 +933,16 @@ function play_move() {
     // Playback of selected instrument.
     remove_all_glow();
 
+    // Show glow on the peg-base where the <select>s are.
     $('#instrument' + target).addClass('glower_active');
-    $('#note' + target).addClass('glower_active');
+    $('#sample' + target).addClass('glower_active');
+
+    // Show glow on the keyboards in the sample library.
+    $('[data-instrument="' + selected_samples[target][0] + '"][data-sample-id="' + selected_samples[target][1] + '"]').addClass('glower_active');  
+
+    if (glow_deactivation_timer) {
+        clearTimeout(glow_deactivation_timer);
+    }
     glow_deactivation_timer = setTimeout(remove_all_glow, 1000);
 
     play_sample(selected_samples[target][0], selected_samples[target][1]);
@@ -978,7 +1017,7 @@ function play_move() {
 }
 
 function step() {
-    console.log('step()');
+    // console.log('step()');
 
     if (play_move_timer) {
         clearTimeout(play_move_timer);
@@ -990,7 +1029,7 @@ function step() {
 }
 
 function play() {
-    console.log('play()');
+    // console.log('play()');
 
     if (playing) {
         // Pause
@@ -1009,7 +1048,7 @@ function play() {
 }
 
 function reset() {
-    console.log('reset()');
+    // console.log('reset()');
 
     if (play_move_timer) {
         clearTimeout(play_move_timer);
@@ -1047,13 +1086,13 @@ function custom_sample_load(e) {
         audio_context.decodeAudioData(arrayBuffer).then(function(audioBuffer) {
             custom_sample_buffer = audioBuffer;
             update_ui();
-            custom_sample_preview();
+            custom_sample_play();
         })
     });
 };
 
-function custom_sample_preview() {
-    // console.log('custom_sample_preview()');
+function custom_sample_play() {
+    // console.log('custom_sample_play()');
 
     var source = audio_context.createBufferSource();
     source.buffer = custom_sample_buffer;
@@ -1064,15 +1103,19 @@ function custom_sample_preview() {
 function custom_sample_add() {
     // console.log('custom_sample_add()');
     
-    var abcnote = $('#text_custom_sample_note').val();
-
     if (!sample_catalog.has(INST_CUSTOM)) {
         sample_catalog.set(INST_CUSTOM, []);
-        $('#sample_preview').after('<div class="uirow" id="sample_preview_custom"><label class="fieldname">Custom</label></div>');
+        $('#sample_library').after('<div class="uirow" id="sample_library_custom"><label class="fieldname">Custom</label></div>');
     }
 
     var samples = sample_catalog.get(INST_CUSTOM);
     var sample_id = custom_sample_file.name;
+
+    var abcnote = $('#text_custom_sample_note').val();
+    // No abc-note specified. Pick one that has not been used for custom samples.
+    if (!abcnote) {
+        abcnote = abc_notes[samples.length];
+    }
 
     // Chop off file extension
     var p = sample_id.lastIndexOf('.');
@@ -1084,7 +1127,7 @@ function custom_sample_add() {
     for (var sample_index = 0; sample_index < samples.length; sample_index++) {
         if (samples[sample_index][SAMPLE_ID] == sample_id) {
             // Sample exists. Update information.
-            samples[sample_index][SAMPLE_ABC_NOTE] = abcnode;
+            samples[sample_index][SAMPLE_ABC_NOTE] = abcnote;
             samples[sample_index][SAMPLE_BUFFER] = custom_sample_buffer;
         } 
     }
@@ -1094,9 +1137,13 @@ function custom_sample_add() {
         samples.push([sample_id, custom_sample_file.name, abcnote, custom_sample_buffer]);
     
         var btnid = 'Custom-' + sample_id.replace(/\./g,'_');
-        $('#sample_preview_custom').append('<button class="button_sample_preview" id="' + btnid + '" data-instrument="Custom" data-sample-id="' + sample_id + '">' + samples[sample_index][SAMPLE_URL] + '</button>');                    
-        $('#' + btnid).click(play_button_sample_preview);
-
+        $('#sample_library_custom').append('<button class="button_sample_library glower" id="' + btnid + '" data-instrument="Custom" data-sample-id="' + sample_id + '">' + samples[sample_index][SAMPLE_URL] + '</button>');                    
+        
+        $('#' + btnid).click(play_button_sample_library);
+        $('#' + btnid).prop('draggable', 'true');
+        $('#' + btnid).on('dragstart', sample_dragstart);
+        $('#' + btnid).on('dragend', sample_dragend);
+   
         for (var peg = 0 ; peg<pegs ; peg++) {
             $('#instrument' + peg).append('<option value="' + INST_CUSTOM + '">' + INST_CUSTOM + '</option>');
             update_note_options(peg);
@@ -1106,6 +1153,7 @@ function custom_sample_add() {
     custom_sample_file = null;
     custom_sample_buffer = null;
 
+    // Clear file upload field.
     $('#file_custom_sample').val('');
     
     update_ui();
@@ -1183,6 +1231,73 @@ function analyser_draw() {
     requestAnimationFrame(analyser_draw);
 }
 
+function sample_dragstart(e) {
+    // console.log('dragstart()');
+    
+    var t = parent_with_id(e.target);
+    $(t).addClass('dragging');
+    
+    sample_being_dragged = {
+        "instrument": $("#" + t.id).data('instrument'),
+        "sample_id":  $("#" + t.id).data('sample-id')
+    }
+}
+
+function sample_dragend(e) {
+    // console.log('dragend()');    
+    
+    var t = parent_with_id(e.target);
+    $(t).removeClass('dragging');
+
+    sample_being_dragged = null;
+}
+
+function sample_dragover(e) {
+    // console.log('dragover()');
+    
+    e.preventDefault();  
+    e.stopPropagation();
+
+    $(e.target).closest('.peg_base').find('.glower').addClass('glower_active');
+} 
+
+function sample_dragleave(e) {
+    // console.log('dragleave()');
+    
+    e.preventDefault();  
+    e.stopPropagation();
+
+    $(e.target).closest('.peg_base').find('.glower').removeClass('glower_active');
+}
+
+function sample_drop(e) {
+    if (sample_being_dragged) {
+        
+        var peg = $(e.target).closest('.peg_base')[0].id.substr('peg_base'.length);
+
+        // console.log('drop(\'' + sample_being_dragged.instrument + '\',\'' + sample_being_dragged.sample_id + '\') on peg #' + peg);
+
+        selected_samples[peg][0] = sample_being_dragged.instrument;
+        selected_samples[peg][1] = sample_being_dragged.sample_id;
+
+        select_sample(peg);
+        abc_render();
+
+        play_sample(selected_samples[peg][0], selected_samples[peg][1]);
+
+        e.preventDefault();  
+        e.stopPropagation();
+
+        $('[data-instrument="' + selected_samples[peg][0] + '"][data-sample-id="' + selected_samples[peg][1] + '"]').addClass('glower_active');
+        if (glow_deactivation_timer) {
+            clearTimeout(glow_deactivation_timer);
+        }
+        glow_deactivation_timer = setTimeout(remove_all_glow, 1000);
+
+        sample_being_dragged = null;
+    }
+}
+
 $(document).ready(function() {
 
     // window.AudioContext = window.AudioContext  || window.webkitAudioContext;
@@ -1203,11 +1318,11 @@ $(document).ready(function() {
 
     // Set up preview controls.
     for (var instrument of sample_catalog.keys()) {
-        var id = 'sample_preview_' + instrument.replace(' ', '_');
+        var id = 'sample_library_' + instrument.replace(' ', '_');
         var samples = sample_catalog.get(instrument);
         var keyboard = ((instrument != INST_CUSTOM) && (instrument != 'Percussion'));
         
-        $('#sample_preview').after(
+        $('#sample_library').after(
             '<div class="uirow"><label class="fieldname">' + instrument + '</label></div>' + 
             '<div class="uirow" id="' + id + '"></div>');
         $('#' + id).append('<div class="samples' + (keyboard ? ' keyboard"' : '') + '"></div>');
@@ -1215,15 +1330,18 @@ $(document).ready(function() {
         for(var sample_index = 0; sample_index < samples.length ; sample_index++) {
             var key = samples[sample_index][SAMPLE_ID].substr(0,1).toLowerCase() + ((samples[sample_index][SAMPLE_ID].indexOf('\u266d') != -1) ? '_flat' : '');
             
-            $(('#' + id + ' .samples')).append('<button class="button_sample_preview' + 
+            $(('#' + id + ' .samples')).append('<button class="button_sample_library glower' + 
                 (keyboard ? ' key ' + key : '') + 
                 (keyboard ? ((samples[sample_index][SAMPLE_ID].indexOf('\u266d') != -1) ? ' black' : ' white') : '') + 
                 '" id="' + instrument.replace(' ', '_') + '-' + samples[sample_index][SAMPLE_ID] + '" data-instrument="' + instrument + '" data-sample-id="' + samples[sample_index][SAMPLE_ID] + '">' + samples[sample_index][SAMPLE_ID] + '</button>');            
         }
     }
 
-    $('.button_sample_preview').click(play_button_sample_preview);
-
+    $('.button_sample_library').click(play_button_sample_library);
+    $('.button_sample_library').prop('draggable', 'true');
+    $('.button_sample_library').on('dragstart', sample_dragstart);
+    $('.button_sample_library').on('dragend', sample_dragend);
+   
     // Set up default sounds. All percussive in order of definition in the instrument-map.
     var percussion_instruments = sample_catalog.get('Percussion');
     for (var instrument_index = 0 ; instrument_index < percussion_instruments.length ; instrument_index++) {
@@ -1251,13 +1369,14 @@ $(document).ready(function() {
     $('#checkbox_loop').on('change', update_ui);
     $('#checkbox_addreverse').on('change', update_ui);
     $('#checkbox_colornotes').on('change', update_ui);
+    $('#checkbox_darkmode').on('change', update_ui);
 
     $('.button_step').click(step);
     $('.button_play').click(play);
     $('.button_reset').click(reset);
 
     $('#file_custom_sample').on('change', custom_sample_load);
-    $('#button_custom_sample_preview').click(custom_sample_preview);
+    $('#button_custom_sample_library').click(custom_sample_play);
     $('#button_custom_sample_add').click(custom_sample_add);
 
     $('#button_record').click(record_toggle);
@@ -1265,6 +1384,9 @@ $(document).ready(function() {
     analyser_canvas = $('#analyser');
     analyser_context = analyser_canvas[0].getContext("2d");
 
+    // Clear file upload field.
+    $('#file_custom_sample').val('');
+    
     // Initialize the visualization loop.
     analyser_draw();
     update_ui();

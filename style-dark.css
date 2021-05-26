@@ -1,12 +1,12 @@
 body {
     background-color: black;
-    color: white;
+    color: rgb(150,150,150);
 }
 
 #board {
     border-color: black;
     background-color:rgb(200, 200, 200);
-    color: white;
+    color: black;
 }
 
 #board_base {
