@@ -119,6 +119,7 @@ button.key.white {
     border-bottom: 1px solid #aaaaaa;
     border-left: 1px solid #aaaaaa;
     background-color: #fffeee;
+    margin-right: 0;
 }
 
 button.key.black {
