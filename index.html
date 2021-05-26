@@ -1418,7 +1418,7 @@ $(document).ready(function() {
     for (var instrument of sample_catalog.keys()) {
         var id = 'sample_library_' + instrument.replace(' ', '_');
         var samples = sample_catalog.get(instrument);
-        var keyboard = ((instrument != INST_CUSTOM) && (instrument != 'Percussion'));
+        var keyboard = ((instrument != INST_CUSTOM) && (instrument != 'Percussion') && (instrument != 'Foley'));
         
         $('#sample_library').after(
             '<div class="uirow"><label class="fieldname">' + instrument + '</label></div>' + 

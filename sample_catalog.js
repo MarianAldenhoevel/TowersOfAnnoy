@@ -8,6 +8,14 @@ const sample_catalog = new Map([
     [ 'openhat-808', 'openhat-808.wav', 'A' ],
     [ 'top-808',     'tom-808.wav',     'B' ],
 ]],
+['Foley', [
+  [ 'Sheep',    'Sheep.wav',   'c' ],
+  [ 'Rooster',  'Rooster.wav', 'd' ],
+  [ 'Peacock',  'Peacock.wav', 'e' ],
+  [ 'Horse',    'Horse.wav',   'f' ],
+  [ 'Cow',      'Cow.wav',     'g' ],
+  [ 'Cat',      'Cat.wav',     'a' ]
+]],
 ['Celesta', [
   [ 'A0',         'celesta-a0.mp3',   'A,,,,'   ],
   [ 'B\u266d0',   'celesta-bb0.mp3',  'B_,,,,'  ],
