@@ -1,3 +1,5 @@
+/* Optional style for dark mode. Override only colors. */
+
 body {
     background-color: black;
     color: rgb(150,150,150);
@@ -14,13 +16,13 @@ body {
     background-color:rgb(200, 200, 200);
 }
 
-#abc {
+#analyser_container {
     border-color: black;
-    color: black;
     background-color:rgb(200, 200, 200);
 }
 
-#analyser_container {
+#abc {
     border-color: black;
+    color: black;
     background-color:rgb(200, 200, 200);
 }

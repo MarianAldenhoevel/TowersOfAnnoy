@@ -540,7 +540,7 @@ function hanoi(pegs, disks) {
     console.log('solved in ' + moves.length + ' moves');
 }
 
-function get_disk_color(disk)
+function get_disk_color(disk, saturation, lightness)
 {
     // Map the disk 0..disks-1 to a HSL hue between min_hue and max_hue.
     var min_hue = 240
@@ -553,7 +553,7 @@ function get_disk_color(disk)
         hue = (disk - 1) / (disks - 1) * (max_hue - min_hue) + min_hue;
     }
 
-    var colString = "hsl(" + hue + ",100%,50%)";
+    var colString = 'hsl(' + hue + ',' + saturation + ',' + lightness + ')';
     
     return colString;
 }
@@ -601,7 +601,13 @@ function create_disks() {
     // Create all required disks as DIV on peg#
     for(var disk = 1 ; disk<=disks ; disk++) {
         $('#peg0').append('<div class="disk" id="disk' + disk + '"><div class="disk_body"></div></div>');
-        $('#disk' + disk + ' .disk_body').width(disk + 'em').css('background', get_disk_color(disk)); 
+        $('#disk' + disk + ' .disk_body')
+            .width(disk + 'em')
+            .css('background-color',    get_disk_color(disk, '100%', '50%')) 
+            .css('border-top-color',    get_disk_color(disk,  '80%', '40%'))
+            .css('border-right-color',  get_disk_color(disk,  '80%', '20%'))            
+            .css('border-bottom-color', get_disk_color(disk,  '80%', '20%'))
+            .css('border-left-color',   get_disk_color(disk,  '80%', '40%')); 
     }
 
     // Resize board.
@@ -1139,10 +1145,11 @@ function custom_sample_add() {
         var btnid = 'Custom-' + sample_id.replace(/\./g,'_');
         $('#sample_library_custom').append('<button class="button_sample_library glower" id="' + btnid + '" data-instrument="Custom" data-sample-id="' + sample_id + '">' + samples[sample_index][SAMPLE_URL] + '</button>');                    
         
-        $('#' + btnid).click(play_button_sample_library);
-        $('#' + btnid).prop('draggable', 'true');
-        $('#' + btnid).on('dragstart', sample_dragstart);
-        $('#' + btnid).on('dragend', sample_dragend);
+        $('#' + btnid)
+            .click(play_button_sample_library)
+            .prop('draggable', 'true')
+            .on('dragstart', sample_dragstart)
+            .on('dragend', sample_dragend);
    
         for (var peg = 0 ; peg<pegs ; peg++) {
             $('#instrument' + peg).append('<option value="' + INST_CUSTOM + '">' + INST_CUSTOM + '</option>');
@@ -1337,10 +1344,11 @@ $(document).ready(function() {
         }
     }
 
-    $('.button_sample_library').click(play_button_sample_library);
-    $('.button_sample_library').prop('draggable', 'true');
-    $('.button_sample_library').on('dragstart', sample_dragstart);
-    $('.button_sample_library').on('dragend', sample_dragend);
+    $('.button_sample_library')
+        .click(play_button_sample_library)
+        .prop('draggable', 'true')
+        .on('dragstart', sample_dragstart)
+        .on('dragend', sample_dragend);
    
     // Set up default sounds. All percussive in order of definition in the instrument-map.
     var percussion_instruments = sample_catalog.get('Percussion');

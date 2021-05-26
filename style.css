@@ -9,31 +9,98 @@ body {
     margin-right: auto;
 }
 
-div.uirow {
+#sticky {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+#board {
     display: flex;
-    align-items: center;
-    margin: 1em;
+    flex-direction: row;    
+    margin-top: 0em;
+    min-height: 10em;
+    border-top: 2px solid black;
+    background-color:rgb(200, 200, 200);
 }
 
-.uirow.sectiontitle {
-    font-weight: bold;
+.peg {
+    min-height: 10em;
+    
+    flex-basis: 0;
+    flex-grow: 1;
+
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: column;
 }
 
-.uirow label.fieldname {
-    min-width: 10em;
+.disk {
+    height: 1em;
+    margin-bottom: -1px;
 }
 
-.uirow label.slidervalue {
-    min-width: 3em;
-    text-align: right;
+.disk_body {
+    box-sizing: border-box;
+    height: 100%;
+    border-radius: 4px;
+    margin: 0 auto;
+    border-width: 2px;
+    border-style: solid;
+    border-color: black;
 }
 
-.uirow button {
-    width: 10em;
+#board_base {
+    display: flex;
+    flex-direction: row;    
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    background-color:rgb(200, 200, 200);
+}
+
+.peg_base {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    text-align: center;
+
+    flex-basis: 0;
+    flex-grow: 1;
+
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+/* Spectrum-analyser */
+#analyser_container {
     height: 2em;
-    margin-right: 1em;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid black;
+    background-color:rgb(200, 200, 200);
 }
 
+#analyser {
+    width: 100%;
+    height: 100%;
+}
+
+/* Area for the abc-notation */
+#abc {
+    text-align: center;
+    padding-top: 1em;
+    border-bottom: 2px solid black;
+    background-color:rgb(200, 200, 200);
+}
+
+/* Resize select elements for instrument and sample */
+.instrument_select, .sample_select {
+    display: block;
+    width: 10em;
+    margin: 0 auto;
+}
+
+/* Keyboard-display for the sample library */
 button.key {
     float: left;
     position: relative;
@@ -67,60 +134,11 @@ button.key.black {
     margin: 0 0 1em -7px !important;
 }
 
-#sticky {
-    position: sticky;
-    top: 0;
-    z-index: 3;
+#preview_buttons button {
+    margin-bottom: 1em;
 }
 
-#board {
-    display: flex;
-    flex-direction: row;    
-    margin-top: 0em;
-    min-height: 10em;
-    border-top: 2px solid black;
-    background-color:rgb(200, 200, 200);
-}
-
-div.uirow.board {
-    background-color: rgb(200,200,200);
-    margin: 0px;
-    padding: 1em;
-    color: black;
-}
-
-.peg {
-    min-height: 10em;
-    
-    flex-basis: 0;
-    flex-grow: 1;
-
-    display: flex;
-    justify-content: flex-end;
-    flex-direction: column;
-}
-
-#board_base {
-    display: flex;
-    flex-direction: row;    
-    border-top: 2px solid black;
-    border-bottom: 2px solid black;
-    background-color:rgb(200, 200, 200);
-}
-
-.peg_base {
-    padding-top: 1em;
-    padding-bottom: 1em;
-    text-align: center;
-
-    flex-basis: 0;
-    flex-grow: 1;
-
-    display: flex;
-    justify-content: flex-start;
-    flex-direction: column;
-}
-
+/* Transient glow and animation-effects */
 .glower {
     transition: box-shadow 100ms linear;
 }
@@ -129,67 +147,16 @@ div.uirow.board {
     box-shadow: 0 0 40px orange, inset 0 0 40px orange;
 }
 
-.disk {
-    height: 1em;
-}
-
-.disk_body {
-    height: 100%;
-    border-radius: 3px;
-    margin: 0 auto;
-    border: 1px solid black;
-}
-
-.instrument_select, .sample_select {
-    display: block;
-    width: 10em;
-    margin: 0 auto;
-}
-
-#preview_buttons button {
-    margin-bottom: 1em;
-}
-
 .current_note {
     fill: orange;
     stroke: orange;
     stroke-width: 1;
 }
 
-#abc {
-    text-align: center;
-    padding-top: 1em;
-    border-bottom: 2px solid black;
-    background-color:rgb(200, 200, 200);
-}
-
-button.custom, option.custom {
-    font-style: italic;
-}
-
-textarea {
-    width: 60%;
-}
-
-#analyser_container {
-    height: 2em;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    border-bottom: 2px solid black;
-    background-color:rgb(200, 200, 200);
-}
-
-#analyser {
-    width: 100%;
-    height: 100%;
-}
+/* Drag&Drop support */
 
 [draggable=true] {
     cursor: move;
-}
-
-[draggable=false] {
-    cursor: not-allowed;
 }
 
 .dragging {
@@ -198,6 +165,45 @@ textarea {
 
 .dragover {
     background-color: blue;
+}
+
+/* Control-panel styles */
+div.uirow {
+    display: flex;
+    align-items: center;
+    margin: 1em;
+}
+
+.uirow.sectiontitle {
+    font-weight: bold;
+}
+
+.uirow label.fieldname {
+    min-width: 10em;
+}
+
+.uirow label.slidervalue {
+    min-width: 3em;
+    text-align: right;
+}
+
+.uirow button {
+    width: 10em;
+    height: 2em;
+    margin-right: 1em;
+}
+
+/* An uirow that is rendered as part of the board itself. e.g. the copy of the playback-controls */
+div.uirow.board {
+    background-color: rgb(200,200,200);
+    margin: 0px;
+    padding: 1em;
+    color: black;
+}
+
+/* Misc */
+textarea {
+    width: 60%;
 }
 
 audio {
