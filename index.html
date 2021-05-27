@@ -278,6 +278,8 @@ function parse_url() {
         var instrument = vars['in' + peg];
         var sample_id = vars['sa' + peg];
 
+        var sample_id_valid = false;
+
         if (instrument && sample_catalog.has(instrument)) {
             var sample_id_valid = (sample_id == 'silence');
             var samples = sample_catalog.get(instrument);
@@ -301,6 +303,7 @@ function parse_url() {
             selected_samples[peg][1] = sample_id;
         }
     }
+    
 }
 
 function update_ui(e) {
@@ -779,9 +782,6 @@ function sample_changed(e) {
     // For wich peg are we called? Extract from the control id.
     var peg = e.target.id.substring('sample'.length);
 
-    console.log(selected_samples);
-    console.log(peg);
-
     // Update the selected sample note to the new value.
     selected_samples[peg][1] = $('#sample' + peg).val();
 
@@ -1094,8 +1094,6 @@ function step() {
 
         play_move();
 
-        console.log('disabled');
-        console.log(reached_end);
         $('.button_step').prop('disabled', reached_end);
     }
 }
@@ -1430,7 +1428,7 @@ $(document).ready(function() {
         
         $('#sample_library').after(
             '<div class="uirow"><label class="fieldname">' + instrument + '</label></div>' + 
-            '<div class="uirow samples" id="' + id + '"></div>');
+            '<div class="uirow" id="' + id + '"></div>');
         $('#' + id).append('<div class="samples' + (keyboard ? ' keyboard"' : '') + '"></div>');
         
         for(var sample_index = 0; sample_index < samples.length ; sample_index++) {
