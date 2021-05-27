@@ -194,6 +194,10 @@ div.uirow {
     margin-right: 1em;
 }
 
+div.uirow div.samples button {
+    margin-bottom: 0.5em;
+}
+
 /* An uirow that is rendered as part of the board itself. e.g. the copy of the playback-controls */
 div.uirow.board {
     background-color: rgb(200,200,200);

@@ -104,6 +104,14 @@
                 <div class="uirow sectiontitle" id="sample_library">
                     <label class="fieldname">Sample library:</label>
                 </div>
+                <div class="uirow attribution">
+                    <p>Samples by</p>
+                    <ul>
+                        <li><a href="https://freeanimalsounds.org/farm-animals/">Freeanimalsounds.org</a></li>
+                        <li><a href="https://www.kvraudio.com/forum/viewtopic.php?t=351893">Musyng Kite Soundfont</a></li>
+                        <li><a href="https://freesound.org/people/Jagadamba/">Jagadamba via freesound.org</a></li>
+                    </ul>
+                </div>
                 <div class="uirow sectiontitle">
                     <label class="fieldname">Upload custom sample</label>
                 </div>
@@ -1418,11 +1426,11 @@ $(document).ready(function() {
     for (var instrument of sample_catalog.keys()) {
         var id = 'sample_library_' + instrument.replace(' ', '_');
         var samples = sample_catalog.get(instrument);
-        var keyboard = ((instrument != INST_CUSTOM) && (instrument != 'Percussion') && (instrument != 'Foley'));
+        var keyboard = ((instrument != INST_CUSTOM) && (instrument != 'Percussion') && (instrument != 'Farm') && (instrument != 'Farts'));
         
         $('#sample_library').after(
             '<div class="uirow"><label class="fieldname">' + instrument + '</label></div>' + 
-            '<div class="uirow" id="' + id + '"></div>');
+            '<div class="uirow samples" id="' + id + '"></div>');
         $('#' + id).append('<div class="samples' + (keyboard ? ' keyboard"' : '') + '"></div>');
         
         for(var sample_index = 0; sample_index < samples.length ; sample_index++) {
